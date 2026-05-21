@@ -1,13 +1,11 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import smtplib
-from email.message import EmailMessage
 import os
 
-# -------------------------
+# -----------------------------
 # PAGE CONFIG
-# -------------------------
+# -----------------------------
 
 st.set_page_config(
     page_title="AI Financial Tracker",
@@ -15,66 +13,191 @@ st.set_page_config(
     layout="wide"
 )
 
-# -------------------------
-# CREATE HISTORY FOLDER
-# -------------------------
+# -----------------------------
+# USERS FILE
+# -----------------------------
 
-if not os.path.exists("history"):
-    os.makedirs("history")
+users_file = "users.csv"
 
-# -------------------------
-# LOGIN SESSION
-# -------------------------
+# create users.csv if not exists
+if not os.path.exists(users_file):
+
+    users_df = pd.DataFrame(
+        columns=["username", "password"]
+    )
+
+    users_df.to_csv(
+        users_file,
+        index=False
+    )
+
+# -----------------------------
+# SESSION
+# -----------------------------
 
 if "logged_in" not in st.session_state:
+
     st.session_state.logged_in = False
 
-# -------------------------
-# LOGIN PAGE
-# -------------------------
+# -----------------------------
+# LOGIN / SIGNUP
+# -----------------------------
 
 if not st.session_state.logged_in:
 
-    st.title("🔐 AI Financial Tracker Login")
+    st.title("💰 AI Financial Tracker")
 
     st.markdown("""
-    ### 💡 Financial Quote
-    
+    ## 💡 Financial Quote
+
     *"Do not save what is left after spending,
     spend what is left after saving."*
-    
+
     — Warren Buffett
     """)
 
-    username = st.text_input("Username")
-
-    password = st.text_input(
-        "Password",
-        type="password"
+    menu = st.selectbox(
+        "Select",
+        ["Login", "Signup"]
     )
 
-    if st.button("Login"):
+    # -----------------------------
+    # LOGIN
+    # -----------------------------
 
-        if (
-            username == "admin"
-            and password == "1234"
-        ):
+    if menu == "Login":
 
-            st.session_state.logged_in = True
+        st.subheader("🔐 Login")
 
-            st.session_state.username = username
+        username = st.text_input(
+            "Username"
+        )
 
-            st.rerun()
+        password = st.text_input(
+            "Password",
+            type="password"
+        )
 
-        else:
+        if st.button("Login"):
 
-            st.error("❌ Invalid Login")
+            users = pd.read_csv(users_file)
+
+            users["username"] = (
+                users["username"]
+                .astype(str)
+                .str.strip()
+                .str.lower()
+            )
+
+            users["password"] = (
+                users["password"]
+                .astype(str)
+                .str.strip()
+            )
+
+            username = username.strip().lower()
+
+            password = str(password).strip()
+
+            match = users[
+                (users["username"] == username)
+                &
+                (users["password"] == password)
+            ]
+
+            if len(match) > 0:
+
+                st.session_state.logged_in = True
+
+                st.session_state.username = username
+
+                st.success(
+                    "✅ Login Successful"
+                )
+
+                st.rerun()
+
+            else:
+
+                st.error(
+                    "❌ Invalid Username or Password"
+                )
+
+    # -----------------------------
+    # SIGNUP
+    # -----------------------------
+
+    else:
+
+        st.subheader("📝 Create Account")
+
+        new_user = st.text_input(
+            "Create Username"
+        )
+
+        new_pass = st.text_input(
+            "Create Password",
+            type="password"
+        )
+
+        if st.button("Signup"):
+
+            users = pd.read_csv(users_file)
+
+            users["username"] = (
+                users["username"]
+                .astype(str)
+                .str.strip()
+                .str.lower()
+            )
+
+            new_user = (
+                new_user
+                .strip()
+                .lower()
+            )
+
+            new_pass = str(
+                new_pass
+            ).strip()
+
+            if (
+                new_user
+                in users["username"].values
+            ):
+
+                st.warning(
+                    "⚠️ Username already exists"
+                )
+
+            else:
+
+                new_data = pd.DataFrame(
+                    {
+                        "username": [new_user],
+                        "password": [new_pass]
+                    }
+                )
+
+                users = pd.concat(
+                    [users, new_data],
+                    ignore_index=True
+                )
+
+                users.to_csv(
+                    users_file,
+                    index=False
+                )
+
+                st.success(
+                    "✅ Account Created Successfully"
+                )
 
     st.stop()
 
-# -------------------------
+# -----------------------------
 # LOGOUT
-# -------------------------
+# -----------------------------
 
 if st.sidebar.button("Logout"):
 
@@ -82,9 +205,9 @@ if st.sidebar.button("Logout"):
 
     st.rerun()
 
-# -------------------------
+# -----------------------------
 # LOAD DATASETS
-# -------------------------
+# -----------------------------
 
 df1 = pd.read_csv("data.csv")
 
@@ -92,9 +215,9 @@ df2 = pd.read_csv(
     "personal_finance_tracker_dataset.csv"
 )
 
-# -------------------------
+# -----------------------------
 # TITLE
-# -------------------------
+# -----------------------------
 
 st.title("💰 AI Financial Expense Tracker")
 
@@ -102,22 +225,9 @@ st.success(
     f"Welcome {st.session_state.username} 👋"
 )
 
-# -------------------------
-# FINANCIAL QUOTE
-# -------------------------
-
-st.markdown("""
-### 💡 Financial Wisdom
-
-*"Do not save what is left after spending,
-spend what is left after saving."*
-
-— Warren Buffett
-""")
-
-# -------------------------
+# -----------------------------
 # THIRUKKURAL
-# -------------------------
+# -----------------------------
 
 st.info("""
 📖 Thirukkural
@@ -130,9 +240,9 @@ Even if income is small,
 there is no harm if expenses are controlled.
 """)
 
-# -------------------------
-# SIDEBAR NAVIGATION
-# -------------------------
+# -----------------------------
+# SIDEBAR
+# -----------------------------
 
 page = st.sidebar.radio(
     "Navigation",
@@ -146,13 +256,13 @@ page = st.sidebar.radio(
     ]
 )
 
-# -------------------------
+# -----------------------------
 # DASHBOARD
-# -------------------------
+# -----------------------------
 
 if page == "Dashboard":
 
-    st.subheader("📊 Financial Dashboard")
+    st.subheader("📊 Dashboard")
 
     income = df2[
         "monthly_income"
@@ -192,13 +302,15 @@ if page == "Dashboard":
 
     st.plotly_chart(fig)
 
-# -------------------------
+# -----------------------------
 # EXPENSE ANALYTICS
-# -------------------------
+# -----------------------------
 
 elif page == "Expense Analytics":
 
-    st.subheader("📊 Expense Analytics")
+    st.subheader(
+        "📊 Expense Analytics"
+    )
 
     category = st.selectbox(
         "Select Category",
@@ -227,17 +339,9 @@ elif page == "Expense Analytics":
 
     st.plotly_chart(fig2)
 
-    fig3 = px.box(
-        df1,
-        y=category,
-        color="City_Tier"
-    )
-
-    st.plotly_chart(fig3)
-
-# -------------------------
+# -----------------------------
 # FINANCIAL GUIDE
-# -------------------------
+# -----------------------------
 
 elif page == "Financial Guide":
 
@@ -256,9 +360,7 @@ elif page == "Financial Guide":
         saved = previous - current
 
         st.success(
-            f"✅ You saved "
-            f"₹{saved:.2f} "
-            f"compared to last month"
+            f"✅ You saved ₹{saved:.2f}"
         )
 
     else:
@@ -266,37 +368,20 @@ elif page == "Financial Guide":
         extra = current - previous
 
         st.error(
-            f"⚠️ You spent "
-            f"₹{extra:.2f} "
-            f"more than last month"
+            f"⚠️ You spent ₹{extra:.2f} more"
         )
 
-    st.subheader("📊 Financial Stress")
-
-    fig4 = px.pie(
-        df2,
-        names="financial_stress_level"
+    st.subheader(
+        "🤖 AI Finance Assistant"
     )
 
-    st.plotly_chart(fig4)
-
-    # -------------------------
-    # AI ASSISTANT
-    # -------------------------
-
-    st.subheader("🤖 AI Finance Assistant")
-
     question = st.text_input(
-        "Ask Financial Question"
+        "Ask Question"
     )
 
     if question:
 
         q = question.lower()
-
-        avg_expense = df2[
-            "monthly_expense_total"
-        ].mean()
 
         highest_month = df2.loc[
             df2[
@@ -310,94 +395,57 @@ elif page == "Financial Guide":
             ].idxmin()
         ]
 
-        if (
-            "highest" in q
-            or "high expense" in q
-        ):
+        if "highest" in q:
 
             st.success(
-                f"📈 Highest expense was in "
-                f"{highest_month['date']} "
-                f"with ₹{highest_month['monthly_expense_total']:.2f}"
+                f"Highest expense month: "
+                f"{highest_month['date']}"
             )
 
-        elif (
-            "lowest" in q
-            or "low expense" in q
-        ):
+        elif "lowest" in q:
 
             st.success(
-                f"📉 Lowest expense was in "
-                f"{lowest_month['date']} "
-                f"with ₹{lowest_month['monthly_expense_total']:.2f}"
+                f"Lowest expense month: "
+                f"{lowest_month['date']}"
             )
 
         elif "save" in q:
 
             st.info("""
-💡 Saving Tips
-
-✔ Reduce entertainment spending
-
-✔ Track monthly expenses
+✔ Reduce entertainment expenses
 
 ✔ Avoid unnecessary shopping
 
-✔ Follow monthly budget planning
+✔ Follow monthly budgeting
 """)
-
-        elif "why" in q:
-
-            st.info("""
-📊 Expenses may increase because of:
-
-• High transport costs
-
-• Entertainment spending
-
-• Healthcare expenses
-
-• Unplanned purchases
-""")
-
-        elif "budget" in q:
-
-            st.info(
-                f"""
-💰 Average monthly expense:
-₹{avg_expense:.2f}
-
-Try maintaining expenses below this level.
-"""
-            )
 
         else:
 
             st.info("""
-🤖 AI Suggestion
-
-Maintain balanced savings,
-reduce unnecessary expenses,
-and monitor spending patterns regularly.
+Track expenses regularly
+and maintain savings balance.
 """)
 
-# -------------------------
+# -----------------------------
 # PREDICTION
-# -------------------------
+# -----------------------------
 
 elif page == "Prediction":
 
-    st.subheader("🤖 Future Expense Prediction")
+    st.subheader(
+        "🤖 Future Prediction"
+    )
 
     predicted = (
         df2[
             "monthly_expense_total"
-        ].tail(10).mean()
+        ]
+        .tail(10)
+        .mean()
     )
 
     st.success(
-        f"📈 Predicted Future Expense: "
-        f"₹{predicted:.2f}"
+        f"📈 Predicted Expense: ₹{predicted:.2f}"
     )
 
     fig5 = px.bar(
@@ -409,14 +457,14 @@ elif page == "Prediction":
 
     st.plotly_chart(fig5)
 
-# -------------------------
+# -----------------------------
 # UPLOAD DATASET
-# -------------------------
+# -----------------------------
 
 elif page == "Upload Dataset":
 
     st.subheader(
-        "📂 Upload Financial Dataset"
+        "📂 Upload Dataset"
     )
 
     uploaded = st.file_uploader(
@@ -434,74 +482,16 @@ elif page == "Upload Dataset":
 
         st.write(new_df.head())
 
-        # SAVE HISTORY
-
-        save_name = uploaded.name
-
-        new_df.to_csv(
-            f"history/{save_name}",
-            index=False
-        )
-
-        numeric_cols = new_df.select_dtypes(
-            include='number'
-        ).columns
-
-        # DASHBOARD
-
-        st.subheader(
-            "📊 Uploaded Dataset Dashboard"
-        )
-
-        c1, c2, c3 = st.columns(3)
-
-        c1.metric(
-            "Columns",
-            len(new_df.columns)
-        )
-
-        c2.metric(
-            "Rows",
-            len(new_df)
-        )
-
-        c3.metric(
-            "Numeric Features",
-            len(numeric_cols)
+        numeric_cols = (
+            new_df
+            .select_dtypes(include='number')
+            .columns
         )
 
         selected = st.selectbox(
-            "Select Numeric Column",
+            "Select Column",
             numeric_cols
         )
-
-        # GREEN / RED ALERT
-
-        avg_value = new_df[
-            selected
-        ].mean()
-
-        latest = new_df[
-            selected
-        ].iloc[-1]
-
-        if latest < avg_value:
-
-            st.success(
-                f"✅ Current value is lower "
-                f"than average by "
-                f"{avg_value-latest:.2f}"
-            )
-
-        else:
-
-            st.error(
-                f"⚠️ Current value is higher "
-                f"than average by "
-                f"{latest-avg_value:.2f}"
-            )
-
-        # HISTOGRAM
 
         fig6 = px.histogram(
             new_df,
@@ -510,149 +500,36 @@ elif page == "Upload Dataset":
 
         st.plotly_chart(fig6)
 
-        # BOX PLOT
+        avg = new_df[
+            selected
+        ].mean()
 
-        fig7 = px.box(
-            new_df,
-            y=selected
-        )
+        latest = new_df[
+            selected
+        ].iloc[-1]
 
-        st.plotly_chart(fig7)
+        if latest < avg:
 
-        # LINE GRAPH
+            st.success(
+                "✅ Current value below average"
+            )
 
-        fig8 = px.line(
-            new_df.head(50),
-            y=selected
-        )
+        else:
 
-        st.plotly_chart(fig8)
+            st.error(
+                "⚠️ Current value above average"
+            )
 
-        # PIE CHART
-
-        fig9 = px.pie(
-            values=new_df[
-                selected
-            ].head(10),
-            names=new_df.index[:10]
-        )
-
-        st.plotly_chart(fig9)
-
-        # REPORT
-
-        st.subheader(
-            "📑 Generated Financial Report"
-        )
-
-        report = f'''
-Average Value:
-{new_df[selected].mean():.2f}
-
-Maximum Value:
-{new_df[selected].max():.2f}
-
-Minimum Value:
-{new_df[selected].min():.2f}
-'''
-
-        st.info(report)
-
-        # EMAIL REPORT
-
-        st.subheader(
-            "📧 Send Report to Email"
-        )
-
-        receiver_email = st.text_input(
-            "Enter Email ID"
-        )
-
-        if st.button("Send Dataset Report"):
-
-            try:
-
-                sender_email = "YOUR_EMAIL@gmail.com"
-
-                sender_password = "YOUR_APP_PASSWORD"
-
-                msg = EmailMessage()
-
-                msg["Subject"] = (
-                    "Financial Dataset Report"
-                )
-
-                msg["From"] = sender_email
-
-                msg["To"] = receiver_email
-
-                msg.set_content(report)
-
-                with smtplib.SMTP_SSL(
-                    "smtp.gmail.com",
-                    465
-                ) as smtp:
-
-                    smtp.login(
-                        sender_email,
-                        sender_password
-                    )
-
-                    smtp.send_message(msg)
-
-                st.success(
-                    "✅ Report Sent Successfully"
-                )
-
-            except:
-
-                st.error(
-                    "❌ Email Sending Failed"
-                )
-
-# -------------------------
+# -----------------------------
 # HISTORY
-# -------------------------
+# -----------------------------
 
 elif page == "History":
 
     st.subheader(
-        "📁 Previous Uploaded Reports"
+        "📁 History"
     )
 
-    files = os.listdir("history")
-
-    if files:
-
-        selected_file = st.selectbox(
-            "Select Previous Report",
-            files
-        )
-
-        history_df = pd.read_csv(
-            f"history/{selected_file}"
-        )
-
-        st.write(history_df.head())
-
-        numeric_cols = history_df.select_dtypes(
-            include='number'
-        ).columns
-
-        selected = st.selectbox(
-            "Select Numeric Column",
-            numeric_cols
-        )
-
-        fig10 = px.line(
-            history_df.head(50),
-            y=selected
-        )
-
-        st.plotly_chart(fig10)
-
-    else:
-
-        st.warning(
-            "No history available"
-        )
+    st.info(
+        "Uploaded reports will appear here."
+    )
