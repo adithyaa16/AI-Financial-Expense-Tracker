@@ -1,11 +1,13 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import smtplib
+from email.message import EmailMessage
 import os
 
-# -----------------------------
+# -------------------------
 # PAGE CONFIG
-# -----------------------------
+# -------------------------
 
 st.set_page_config(
     page_title="AI Financial Tracker",
@@ -13,61 +15,62 @@ st.set_page_config(
     layout="wide"
 )
 
-# -----------------------------
-# USERS FILE
-# -----------------------------
+# -------------------------
+# CREATE HISTORY FOLDER
+# -------------------------
 
-users_file = "users.csv"
+if not os.path.exists("history"):
+    os.makedirs("history")
 
-# create users.csv if not exists
-if not os.path.exists(users_file):
-
-    users_df = pd.DataFrame(
-        columns=["username", "password"]
-    )
-
-    users_df.to_csv(
-        users_file,
-        index=False
-    )
-
-# -----------------------------
-# SESSION
-# -----------------------------
+# -------------------------
+# LOGIN SESSION
+# -------------------------
 
 if "logged_in" not in st.session_state:
-
     st.session_state.logged_in = False
 
-# -----------------------------
-# LOGIN / SIGNUP
-# -----------------------------
+# -------------------------
+# LOGIN PAGE
+# -------------------------
 
 if not st.session_state.logged_in:
 
-    st.title("💰 AI Financial Tracker")
+    st.title("🔐 AI Financial Tracker Login")
 
     st.markdown("""
-    ## 💡 Financial Quote
-
+    ### 💡 Financial Quote
+    
     *"Do not save what is left after spending,
     spend what is left after saving."*
-
+    
     — Warren Buffett
     """)
+
+    users_file = "users.csv"
+
+    # create users file
+
+    if not os.path.exists(users_file):
+
+        users_df = pd.DataFrame(
+            columns=["username", "password"]
+        )
+
+        users_df.to_csv(
+            users_file,
+            index=False
+        )
 
     menu = st.selectbox(
         "Select",
         ["Login", "Signup"]
     )
 
-    # -----------------------------
+    # -------------------------
     # LOGIN
-    # -----------------------------
+    # -------------------------
 
     if menu == "Login":
-
-        st.subheader("🔐 Login")
 
         username = st.text_input(
             "Username"
@@ -80,56 +83,76 @@ if not st.session_state.logged_in:
 
         if st.button("Login"):
 
-            users = pd.read_csv(users_file)
+            try:
 
-            users["username"] = (
-                users["username"]
-                .astype(str)
-                .str.strip()
-                .str.lower()
-            )
-
-            users["password"] = (
-                users["password"]
-                .astype(str)
-                .str.strip()
-            )
-
-            username = username.strip().lower()
-
-            password = str(password).strip()
-
-            match = users[
-                (users["username"] == username)
-                &
-                (users["password"] == password)
-            ]
-
-            if len(match) > 0:
-
-                st.session_state.logged_in = True
-
-                st.session_state.username = username
-
-                st.success(
-                    "✅ Login Successful"
+                users = pd.read_csv(
+                    users_file,
+                    dtype=str
                 )
 
-                st.rerun()
+                users["username"] = (
+                    users["username"]
+                    .str.strip()
+                    .str.lower()
+                )
 
-            else:
+                users["password"] = (
+                    users["password"]
+                    .str.strip()
+                )
+
+                username_input = (
+                    username
+                    .strip()
+                    .lower()
+                )
+
+                password_input = (
+                    str(password)
+                    .strip()
+                )
+
+                user_exists = users[
+                    (
+                        users["username"]
+                        == username_input
+                    )
+                    &
+                    (
+                        users["password"]
+                        == password_input
+                    )
+                ]
+
+                if not user_exists.empty:
+
+                    st.session_state.logged_in = True
+
+                    st.session_state.username = username_input
+
+                    st.success(
+                        "✅ Login Successful"
+                    )
+
+                    st.rerun()
+
+                else:
+
+                    st.error(
+                        "❌ Invalid Username or Password"
+                    )
+
+            except Exception as e:
 
                 st.error(
-                    "❌ Invalid Username or Password"
+                    f"Error: {e}"
                 )
 
-    # -----------------------------
+    # -------------------------
     # SIGNUP
-    # -----------------------------
+    # -------------------------
 
     else:
-
-        st.subheader("📝 Create Account")
 
         new_user = st.text_input(
             "Create Username"
@@ -142,11 +165,13 @@ if not st.session_state.logged_in:
 
         if st.button("Signup"):
 
-            users = pd.read_csv(users_file)
+            users = pd.read_csv(
+                users_file,
+                dtype=str
+            )
 
             users["username"] = (
                 users["username"]
-                .astype(str)
                 .str.strip()
                 .str.lower()
             )
@@ -157,9 +182,10 @@ if not st.session_state.logged_in:
                 .lower()
             )
 
-            new_pass = str(
-                new_pass
-            ).strip()
+            new_pass = (
+                str(new_pass)
+                .strip()
+            )
 
             if (
                 new_user
@@ -195,9 +221,9 @@ if not st.session_state.logged_in:
 
     st.stop()
 
-# -----------------------------
+# -------------------------
 # LOGOUT
-# -----------------------------
+# -------------------------
 
 if st.sidebar.button("Logout"):
 
@@ -205,9 +231,9 @@ if st.sidebar.button("Logout"):
 
     st.rerun()
 
-# -----------------------------
+# -------------------------
 # LOAD DATASETS
-# -----------------------------
+# -------------------------
 
 df1 = pd.read_csv("data.csv")
 
@@ -215,9 +241,9 @@ df2 = pd.read_csv(
     "personal_finance_tracker_dataset.csv"
 )
 
-# -----------------------------
+# -------------------------
 # TITLE
-# -----------------------------
+# -------------------------
 
 st.title("💰 AI Financial Expense Tracker")
 
@@ -225,9 +251,22 @@ st.success(
     f"Welcome {st.session_state.username} 👋"
 )
 
-# -----------------------------
+# -------------------------
+# FINANCIAL QUOTE
+# -------------------------
+
+st.markdown("""
+### 💡 Financial Wisdom
+
+*"Do not save what is left after spending,
+spend what is left after saving."*
+
+— Warren Buffett
+""")
+
+# -------------------------
 # THIRUKKURAL
-# -----------------------------
+# -------------------------
 
 st.info("""
 📖 Thirukkural
@@ -240,9 +279,9 @@ Even if income is small,
 there is no harm if expenses are controlled.
 """)
 
-# -----------------------------
-# SIDEBAR
-# -----------------------------
+# -------------------------
+# SIDEBAR NAVIGATION
+# -------------------------
 
 page = st.sidebar.radio(
     "Navigation",
@@ -256,13 +295,13 @@ page = st.sidebar.radio(
     ]
 )
 
-# -----------------------------
+# -------------------------
 # DASHBOARD
-# -----------------------------
+# -------------------------
 
 if page == "Dashboard":
 
-    st.subheader("📊 Dashboard")
+    st.subheader("📊 Financial Dashboard")
 
     income = df2[
         "monthly_income"
@@ -302,15 +341,13 @@ if page == "Dashboard":
 
     st.plotly_chart(fig)
 
-# -----------------------------
+# -------------------------
 # EXPENSE ANALYTICS
-# -----------------------------
+# -------------------------
 
 elif page == "Expense Analytics":
 
-    st.subheader(
-        "📊 Expense Analytics"
-    )
+    st.subheader("📊 Expense Analytics")
 
     category = st.selectbox(
         "Select Category",
@@ -339,9 +376,17 @@ elif page == "Expense Analytics":
 
     st.plotly_chart(fig2)
 
-# -----------------------------
+    fig3 = px.box(
+        df1,
+        y=category,
+        color="City_Tier"
+    )
+
+    st.plotly_chart(fig3)
+
+# -------------------------
 # FINANCIAL GUIDE
-# -----------------------------
+# -------------------------
 
 elif page == "Financial Guide":
 
@@ -360,7 +405,9 @@ elif page == "Financial Guide":
         saved = previous - current
 
         st.success(
-            f"✅ You saved ₹{saved:.2f}"
+            f"✅ You saved "
+            f"₹{saved:.2f} "
+            f"compared to last month"
         )
 
     else:
@@ -368,20 +415,33 @@ elif page == "Financial Guide":
         extra = current - previous
 
         st.error(
-            f"⚠️ You spent ₹{extra:.2f} more"
+            f"⚠️ You spent "
+            f"₹{extra:.2f} "
+            f"more than last month"
         )
 
-    st.subheader(
-        "🤖 AI Finance Assistant"
+    st.subheader("📊 Financial Stress")
+
+    fig4 = px.pie(
+        df2,
+        names="financial_stress_level"
     )
 
+    st.plotly_chart(fig4)
+
+    st.subheader("🤖 AI Finance Assistant")
+
     question = st.text_input(
-        "Ask Question"
+        "Ask Financial Question"
     )
 
     if question:
 
         q = question.lower()
+
+        avg_expense = df2[
+            "monthly_expense_total"
+        ].mean()
 
         highest_month = df2.loc[
             df2[
@@ -395,57 +455,94 @@ elif page == "Financial Guide":
             ].idxmin()
         ]
 
-        if "highest" in q:
+        if (
+            "highest" in q
+            or "high expense" in q
+        ):
 
             st.success(
-                f"Highest expense month: "
-                f"{highest_month['date']}"
+                f"📈 Highest expense was in "
+                f"{highest_month['date']} "
+                f"with ₹{highest_month['monthly_expense_total']:.2f}"
             )
 
-        elif "lowest" in q:
+        elif (
+            "lowest" in q
+            or "low expense" in q
+        ):
 
             st.success(
-                f"Lowest expense month: "
-                f"{lowest_month['date']}"
+                f"📉 Lowest expense was in "
+                f"{lowest_month['date']} "
+                f"with ₹{lowest_month['monthly_expense_total']:.2f}"
             )
 
         elif "save" in q:
 
             st.info("""
-✔ Reduce entertainment expenses
+💡 Saving Tips
+
+✔ Reduce entertainment spending
+
+✔ Track monthly expenses
 
 ✔ Avoid unnecessary shopping
 
-✔ Follow monthly budgeting
+✔ Follow monthly budget planning
 """)
+
+        elif "why" in q:
+
+            st.info("""
+📊 Expenses may increase because of:
+
+• High transport costs
+
+• Entertainment spending
+
+• Healthcare expenses
+
+• Unplanned purchases
+""")
+
+        elif "budget" in q:
+
+            st.info(
+                f"""
+💰 Average monthly expense:
+₹{avg_expense:.2f}
+
+Try maintaining expenses below this level.
+"""
+            )
 
         else:
 
             st.info("""
-Track expenses regularly
-and maintain savings balance.
+🤖 AI Suggestion
+
+Maintain balanced savings,
+reduce unnecessary expenses,
+and monitor spending patterns regularly.
 """)
 
-# -----------------------------
+# -------------------------
 # PREDICTION
-# -----------------------------
+# -------------------------
 
 elif page == "Prediction":
 
-    st.subheader(
-        "🤖 Future Prediction"
-    )
+    st.subheader("🤖 Future Expense Prediction")
 
     predicted = (
         df2[
             "monthly_expense_total"
-        ]
-        .tail(10)
-        .mean()
+        ].tail(10).mean()
     )
 
     st.success(
-        f"📈 Predicted Expense: ₹{predicted:.2f}"
+        f"📈 Predicted Future Expense: "
+        f"₹{predicted:.2f}"
     )
 
     fig5 = px.bar(
@@ -457,14 +554,14 @@ elif page == "Prediction":
 
     st.plotly_chart(fig5)
 
-# -----------------------------
+# -------------------------
 # UPLOAD DATASET
-# -----------------------------
+# -------------------------
 
 elif page == "Upload Dataset":
 
     st.subheader(
-        "📂 Upload Dataset"
+        "📂 Upload Financial Dataset"
     )
 
     uploaded = st.file_uploader(
@@ -482,16 +579,62 @@ elif page == "Upload Dataset":
 
         st.write(new_df.head())
 
-        numeric_cols = (
-            new_df
-            .select_dtypes(include='number')
-            .columns
+        save_name = uploaded.name
+
+        new_df.to_csv(
+            f"history/{save_name}",
+            index=False
+        )
+
+        numeric_cols = new_df.select_dtypes(
+            include='number'
+        ).columns
+
+        st.subheader(
+            "📊 Uploaded Dataset Dashboard"
+        )
+
+        c1, c2, c3 = st.columns(3)
+
+        c1.metric(
+            "Columns",
+            len(new_df.columns)
+        )
+
+        c2.metric(
+            "Rows",
+            len(new_df)
+        )
+
+        c3.metric(
+            "Numeric Features",
+            len(numeric_cols)
         )
 
         selected = st.selectbox(
-            "Select Column",
+            "Select Numeric Column",
             numeric_cols
         )
+
+        avg_value = new_df[selected].mean()
+
+        latest = new_df[selected].iloc[-1]
+
+        if latest < avg_value:
+
+            st.success(
+                f"✅ Current value is lower "
+                f"than average by "
+                f"{avg_value-latest:.2f}"
+            )
+
+        else:
+
+            st.error(
+                f"⚠️ Current value is higher "
+                f"than average by "
+                f"{latest-avg_value:.2f}"
+            )
 
         fig6 = px.histogram(
             new_df,
@@ -500,36 +643,123 @@ elif page == "Upload Dataset":
 
         st.plotly_chart(fig6)
 
-        avg = new_df[
-            selected
-        ].mean()
+        fig7 = px.line(
+            new_df.head(50),
+            y=selected
+        )
 
-        latest = new_df[
-            selected
-        ].iloc[-1]
+        st.plotly_chart(fig7)
 
-        if latest < avg:
+        report = f"""
+Average Value:
+{new_df[selected].mean():.2f}
 
-            st.success(
-                "✅ Current value below average"
-            )
+Maximum Value:
+{new_df[selected].max():.2f}
 
-        else:
+Minimum Value:
+{new_df[selected].min():.2f}
+"""
 
-            st.error(
-                "⚠️ Current value above average"
-            )
+        st.subheader(
+            "📑 Generated Report"
+        )
 
-# -----------------------------
+        st.info(report)
+
+# -------------------------
 # HISTORY
-# -----------------------------
+# -------------------------
 
 elif page == "History":
 
     st.subheader(
-        "📁 History"
+        "📁 Previous Uploaded Reports"
     )
 
-    st.info(
-        "Uploaded reports will appear here."
-    )
+    files = os.listdir("history")
+
+    if files:
+
+        selected_file = st.selectbox(
+            "Select Previous Report",
+            files
+        )
+
+        history_df = pd.read_csv(
+            f"history/{selected_file}"
+        )
+
+        st.success(
+            f"Showing report: {selected_file}"
+        )
+
+        st.write(history_df.head())
+
+        numeric_cols = history_df.select_dtypes(
+            include='number'
+        ).columns
+
+        if len(numeric_cols) > 0:
+
+            selected = st.selectbox(
+                "Select Numeric Column",
+                numeric_cols
+            )
+
+            fig10 = px.line(
+                history_df.head(50),
+                y=selected,
+                title=f"{selected} Trend"
+            )
+
+            st.plotly_chart(fig10)
+
+            fig11 = px.bar(
+                history_df.head(20),
+                y=selected,
+                title=f"{selected} Analysis"
+            )
+
+            st.plotly_chart(fig11)
+
+            st.subheader(
+                "📊 Report Summary"
+            )
+
+            avg = history_df[
+                selected
+            ].mean()
+
+            maximum = history_df[
+                selected
+            ].max()
+
+            minimum = history_df[
+                selected
+            ].min()
+
+            st.info(
+                f"""
+Average Value:
+{avg:.2f}
+
+Maximum Value:
+{maximum:.2f}
+
+Minimum Value:
+{minimum:.2f}
+"""
+            )
+
+        else:
+
+            st.warning(
+                "No numeric columns found"
+            )
+
+    else:
+
+        st.warning(
+            "No history available"
+        )
