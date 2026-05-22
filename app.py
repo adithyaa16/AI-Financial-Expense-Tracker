@@ -185,12 +185,16 @@ if not st.session_state.logged_in:
         )
 
         result = oauth2.authorize_button(
-            name="Continue with Google",
-            icon="https://www.google.com/favicon.ico",
-            redirect_uri="https://ai-financial-expense-tracker-db2xofjfgurg5tvyelsyhm.streamlit.app",
-            scope="openid email profile",
-            key="google",
-        )
+
+    name="Continue with Google",
+    icon="https://www.google.com/favicon.ico",
+    redirect_uri="https://ai-financial-expense-tracker-db2xofjfgurg5tvyelsyhm.streamlit.app",
+    scope="openid email profile",
+    use_container_width=True,
+    pkce="S256",
+    key="google_login",
+)
+        
 
         if result:
 
