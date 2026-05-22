@@ -4,6 +4,7 @@ import plotly.express as px
 import smtplib
 from email.message import EmailMessage
 import os
+from streamlit_oauth import OAuth2Component
 
 # -------------------------
 # PAGE CONFIG
@@ -13,6 +14,31 @@ st.set_page_config(
     page_title="AI Financial Tracker",
     page_icon="💰",
     layout="wide"
+)
+
+# -------------------------
+# GOOGLE OAUTH
+# -------------------------
+
+CLIENT_ID = st.secrets["CLIENT_ID"]
+
+CLIENT_SECRET = st.secrets["CLIENT_SECRET"]
+
+AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/auth"
+
+TOKEN_URL = "https://oauth2.googleapis.com/token"
+
+REFRESH_TOKEN_URL = TOKEN_URL
+
+REVOKE_TOKEN_URL = "https://oauth2.googleapis.com/revoke"
+
+oauth2 = OAuth2Component(
+    CLIENT_ID,
+    CLIENT_SECRET,
+    AUTHORIZE_URL,
+    TOKEN_URL,
+    REFRESH_TOKEN_URL,
+    REVOKE_TOKEN_URL,
 )
 
 # -------------------------
@@ -147,6 +173,36 @@ if not st.session_state.logged_in:
                 st.error(
                     f"Error: {e}"
                 )
+
+        # -------------------------
+        # GOOGLE LOGIN
+        # -------------------------
+
+        st.markdown("---")
+
+        st.subheader(
+            "Continue with Google"
+        )
+
+        result = oauth2.authorize_button(
+            name="Continue with Google",
+            icon="https://www.google.com/favicon.ico",
+            redirect_uri="http://localhost:8501",
+            scope="openid email profile",
+            key="google",
+        )
+
+        if result:
+
+            st.session_state.logged_in = True
+
+            st.session_state.username = "Google User"
+
+            st.success(
+                "✅ Google Login Successful"
+            )
+
+            st.rerun()
 
     # -------------------------
     # SIGNUP
