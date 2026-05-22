@@ -24,7 +24,7 @@ CLIENT_ID = st.secrets["CLIENT_ID"]
 
 CLIENT_SECRET = st.secrets["CLIENT_SECRET"]
 
-AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/auth"
+AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 
