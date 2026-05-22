@@ -188,7 +188,7 @@ if not st.session_state.logged_in:
 
     name="Continue with Google",
     icon="https://www.google.com/favicon.ico",
-    redirect_uri="https://ai-financial-expense-tracker-db2xofjfgurg5tvyelsyhm.streamlit.app",
+    redirect_uri="https://ai-financial-expense-tracker-db2xofjfgurg5tvyelsyhm.streamlit.app/component/streamlit_oauth.authorize_button",
     scope="openid email profile",
     use_container_width=True,
     pkce="S256",
