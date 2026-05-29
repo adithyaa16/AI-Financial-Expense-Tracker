@@ -5,6 +5,8 @@ import smtplib
 from email.message import EmailMessage
 import os
 from streamlit_oauth import OAuth2Component
+import smtplib
+from email.message import EmailMessage
 
 # -------------------------
 # PAGE CONFIG
@@ -41,6 +43,38 @@ oauth2 = OAuth2Component(
     REVOKE_TOKEN_URL,
 )
 
+def send_email(recipient, subject, body):
+
+    try:
+
+        sender = st.secrets["EMAIL"]
+        password = st.secrets["EMAIL_PASSWORD"]
+
+        msg = EmailMessage()
+
+        msg["Subject"] = subject
+        msg["From"] = sender
+        msg["To"] = recipient
+
+        msg.set_content(body)
+
+        with smtplib.SMTP_SSL(
+            "smtp.gmail.com",
+            465
+        ) as smtp:
+
+            smtp.login(
+                sender,
+                password
+            )
+
+            smtp.send_message(msg)
+
+        return True
+
+    except Exception as e:
+
+        return str(e)
 # -------------------------
 # CREATE HISTORY FOLDER
 # -------------------------
@@ -351,7 +385,8 @@ page = st.sidebar.radio(
         "Financial Guide",
         "Prediction",
         "Upload Dataset",
-        "History"
+        "History",
+        "SMTP Test"
     ]
 )
 
@@ -823,3 +858,53 @@ Minimum Value:
         st.warning(
             "No history available"
         )
+
+# -------------------------
+# SMTP TEST
+# -------------------------
+
+elif page == "SMTP Test":
+
+    st.subheader("📧 SMTP Email Service")
+
+    recipient = st.text_input(
+        "Recipient Email"
+    )
+
+    subject = st.text_input(
+        "Subject"
+    )
+
+    body = st.text_area(
+        "Message"
+    )
+
+    if st.button(
+        "Send Email"
+    ):
+
+        if recipient and subject and body:
+
+            result = send_email(
+                recipient,
+                subject,
+                body
+            )
+
+            if result is True:
+
+                st.success(
+                    "✅ Email Sent Successfully"
+                )
+
+            else:
+
+                st.error(
+                    f"❌ {result}"
+                )
+
+        else:
+
+            st.warning(
+                "Please fill all fields"
+            )
